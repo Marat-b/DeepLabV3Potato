@@ -2,6 +2,11 @@ import itertools
 import json
 import time
 from collections import defaultdict
+from typing import List
+import numpy as np
+import pycocotools.mask as mask_util
+
+from utilz.cv2_imshow import cv2_imshow
 
 
 def _isArrayLike(obj):
@@ -18,8 +23,8 @@ class PotatoDataset:
         """
         # load dataset
         self.dataset, self.anns, self.cats, self.imgs = dict(), dict(), dict(), dict()
-        self.img_to_anns, self.cat_to_imgs, self.img_to_segments, self.cat_ids =\
-            defaultdict(list), defaultdict(list), defaultdict(list), defaultdict(list)
+        self.img_to_segments, self.cat_ids = \
+            defaultdict(list), defaultdict(list)
         if annotation_file is not None:
             print('loading annotations into memory...')
             tic = time.time()
@@ -33,11 +38,11 @@ class PotatoDataset:
         # create index
         print('creating index...')
         anns, cats, imgs = {}, {}, {}
-        img_to_anns, cat_to_imgs, img_to_segments, cat_ids = defaultdict(list), defaultdict(list), defaultdict(list), \
-                                                             defaultdict(list)
+        img_to_segments, cat_ids = defaultdict(list), defaultdict(list)
+
         if 'annotations' in self.dataset:
             for ann in self.dataset['annotations']:
-                img_to_anns[ann['image_id']].append(ann)
+                # img_to_anns[ann['image_id']].append(ann)
                 anns[ann['id']] = ann
 
         if 'images' in self.dataset:
@@ -48,9 +53,9 @@ class PotatoDataset:
             for cat in self.dataset['categories']:
                 cats[cat['id']] = cat
 
-        if 'annotations' in self.dataset and 'categories' in self.dataset:
-            for ann in self.dataset['annotations']:
-                cat_to_imgs[ann['category_id']].append(ann['image_id'])
+        # if 'annotations' in self.dataset and 'categories' in self.dataset:
+        #     for ann in self.dataset['annotations']:
+        #         cat_to_imgs[ann['category_id']].append(ann['image_id'])
 
         if 'annotations' in self.dataset:
             for ann in self.dataset['annotations']:
@@ -68,100 +73,78 @@ class PotatoDataset:
 
         # create class members
         self.anns = anns
-        self.img_to_anns = img_to_anns
-        self.cat_to_imgs = cat_to_imgs
+        # self.img_to_anns = img_to_anns
+        # self.cat_to_imgs = cat_to_imgs
         self.imgs = imgs
         self.cats = cats
         self.img_to_segments = img_to_segments
         self.cat_ids = cat_ids
 
-    def get_an_ids(self, img_ids=[], cat_ids=[], areaRng=[], iscrowd=None):
+    def _polygons_to_bitmask(self, polygons: List[np.ndarray], height: int, width: int) -> np.ndarray:
         """
-        Get ann ids that satisfy given filter conditions. default skips that filter
-        :param img_ids  (int array)     : get anns for given imgs
-               cat_ids  (int array)     : get anns for given cats
-               areaRng (float array)   : get anns for given area range (e.g. [0 inf])
-               iscrowd (boolean)       : get anns for given crowd label (False or True)
-        :return: ids (int array)       : integer array of ann ids
-        """
-        img_ids = img_ids if _isArrayLike(img_ids) else [img_ids]
-        cat_ids = cat_ids if _isArrayLike(cat_ids) else [cat_ids]
+        Args:
+            polygons (list[ndarray]): each array has shape (Nx2,)
+            height, width (int)
 
-        if len(img_ids) == len(cat_ids) == len(areaRng) == 0:
-            anns = self.dataset['annotations']
-        else:
-            if not len(img_ids) == 0:
-                lists = [self.img_to_anns[imgId] for imgId in img_ids if imgId in self.img_to_anns]
-                anns = list(itertools.chain.from_iterable(lists))
-            else:
-                anns = self.dataset['annotations']
-            anns = anns if len(cat_ids) == 0 else [ann for ann in anns if ann['category_id'] in cat_ids]
-            anns = anns if len(areaRng) == 0 else [ann for ann in anns if
-                                                   ann['area'] > areaRng[0] and ann['area'] < areaRng[1]]
-        if iscrowd is not None:
-            ids = [ann['id'] for ann in anns if ann['iscrowd'] == iscrowd]
-        else:
-            ids = [ann['id'] for ann in anns]
-        return ids
-
-    def get_cat_ids(self, cat_nms=[], sup_nms=[], cat_ids=[]):
+        Returns:
+            ndarray: a bool mask of shape (height, width)
         """
-        filtering parameters. default skips that filter.
-        :param cat_nms (str array)  : get cats for given cat names
-        :param sup_nms (str array)  : get cats for given supercategory names
-        :param cat_ids (int array)  : get cats for given cat ids
-        :return: ids (int array)   : integer array of cat ids
-        """
-        cat_nms = cat_nms if _isArrayLike(cat_nms) else [cat_nms]
-        sup_nms = sup_nms if _isArrayLike(sup_nms) else [sup_nms]
-        cat_ids = cat_ids if _isArrayLike(cat_ids) else [cat_ids]
+        if len(polygons) == 0:
+            # COCOAPI does not support empty polygons
+            return np.zeros((height, width)).astype(np.bool_)
+        rles = mask_util.frPyObjects(polygons, height, width)
+        rle = mask_util.merge(rles)
+        return mask_util.decode(rle).astype(np.bool_)
 
-        if len(cat_nms) == len(sup_nms) == len(cat_ids) == 0:
-            cats = self.dataset['categories']
-        else:
-            cats = self.dataset['categories']
-            cats = cats if len(cat_nms) == 0 else [cat for cat in cats if cat['name'] in cat_nms]
-            cats = cats if len(sup_nms) == 0 else [cat for cat in cats if cat['supercategory'] in sup_nms]
-            cats = cats if len(cat_ids) == 0 else [cat for cat in cats if cat['id'] in cat_ids]
-        ids = [cat['id'] for cat in cats]
-        return ids
-
-    def get_img_ids(self, img_ids=[], cat_ids=[]):
-        """
-        Get img ids that satisfy given filter conditions.
-        :param img_ids (int array) : get imgs for given ids
-        :param cat_ids (int array) : get imgs with all given cats
-        :return: ids (int array)  : integer array of img ids
-        """
-        img_ids = img_ids if _isArrayLike(img_ids) else [img_ids]
-        cat_ids = cat_ids if _isArrayLike(cat_ids) else [cat_ids]
-
-        if len(img_ids) == len(cat_ids) == 0:
-            ids = self.imgs.keys()
-        else:
-            ids = set(img_ids)
-            for i, catId in enumerate(cat_ids):
-                if i == 0 and len(ids) == 0:
-                    ids = set(self.cat_to_imgs[catId])
-                else:
-                    ids &= set(self.cat_to_imgs[catId])
-        return list(ids)
+    def get_mask(self, masks=[], new_shape=(512, 512)):
+        for img_key in self.imgs.keys():
+            # bitmasks = np.zeros((len(pd.cat_ids), self.imgs[img_key]['height'], self.imgs[img_key]['width']))
+            bitmasks = np.zeros((len(pd.cat_ids), new_shape[0], new_shape[1]))
+            print(f'empty bitmasks.shape={bitmasks.shape}')
+            for img_to_segment in self.img_to_segments[img_key]:
+                for cat in self.cat_ids:
+                    if img_to_segment['category_id'] == cat:
+                        # print(f'img_to_segment={img_to_segment}')
+                        print(f'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+                        bitmask = self._polygons_to_bitmask(
+                            img_to_segment['segmentation'],
+                            self.imgs[img_key]['height'], self.imgs[img_key]['width']
+                        ).astype('uint8')
+                        print(f'max old bitmask={np.max(bitmask)}')
+                        bitmasks[cat - 1] += np.resize(bitmask, new_shape=new_shape)
+                        print(f'max new bitmask={np.max(np.resize(bitmask, new_shape=new_shape))}')
+                        print(f'bitmask.shape={bitmask.shape}')
+                        print(f'max bitmasks={np.max(bitmasks)}')
+            print(f'full bitmasks.shape={bitmasks.shape}')
+            masks.append(bitmasks)
+        return masks
 
 
 if __name__ == '__main__':
     pd = PotatoDataset('../datasets/potato_set16_coco.json')
-    pd.create_index()
+
     # print(f'pd.img_to_anns={pd.img_to_anns}')
     print(f'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     print(f'pd.imgs={pd.imgs}')
     print(f'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     print(f'pd.cats={pd.cats}')
     print(f'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    print(f'pd.cat_to_imgs={pd.cat_to_imgs}')
-    for cat in pd.cat_ids:
-        for img_to_segment in pd.img_to_segments[1]:
-            if img_to_segment['category_id'] == cat:
-                print(f'img_to_segment={img_to_segment}')
-        print(f'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    print(f'cat_ids={pd.cat_ids}')
+    # print(f'pd.cat_to_imgs={pd.cat_to_imgs}')
 
+    masks = pd.get_mask()
+    print(f'pd.imgs.keys()={pd.imgs.keys()}')
+    # np.stack((masks, bitmasks.astype('uint8')), axis=2)
+    # cv2_imshow(mask.astype("uint8"))
+    # print(f'pb={mask.astype("uint8")}')
+    print(f'cat_ids={pd.cat_ids}')
+    print(f'masks.shape={np.array(masks).shape}')
+    # cv2_imshow(bitmask)
+    # print(f'bitmasks.shape={bitmasks.shape}')
+
+    # print(f'bitmasks={bitmasks}')
+    # cv2_imshow(bitmasks[0].reshape((height, width, 1)), 'bitmasks[0]')
+    # print(np.array(masks)[0])
+    # masks[masks == 1] = 255
+    print(np.array(masks)[0].shape)
+    # cv2_imshow(bitmasks[1].reshape((height, width, 1)), 'bitmasks[1]')
+    cv2_imshow(np.array(masks)[0][2].reshape((512, 512, 1)), 'masks[0][0]')
