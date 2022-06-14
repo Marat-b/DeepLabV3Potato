@@ -111,13 +111,19 @@ class PotatoDataset:
                             self.imgs[img_key]['height'], self.imgs[img_key]['width']
                         ).astype('uint8')
                         print(f'max old bitmask={np.max(bitmask)}')
-                        bitmasks[cat - 1] += np.resize(bitmask, new_shape=new_shape)
+                        bitmasks[cat - 1] += self._scale(bitmask, new_shape[0], new_shape[1])
                         print(f'max new bitmask={np.max(np.resize(bitmask, new_shape=new_shape))}')
                         print(f'bitmask.shape={bitmask.shape}')
                         print(f'max bitmasks={np.max(bitmasks)}')
             print(f'full bitmasks.shape={bitmasks.shape}')
             masks.append(bitmasks)
         return masks
+
+    def _scale(self, im, n_rows, n_columns):
+        n_rows0 = len(im)  # source number of rows
+        n_columns0 = len(im[0])  # source number of columns
+        return [[im[int(n_rows0 * r / n_rows)][int(n_columns0 * c / n_columns)]
+                 for c in range(n_columns)] for r in range(n_rows)]
 
 
 if __name__ == '__main__':
@@ -147,4 +153,6 @@ if __name__ == '__main__':
     # masks[masks == 1] = 255
     print(np.array(masks)[0].shape)
     # cv2_imshow(bitmasks[1].reshape((height, width, 1)), 'bitmasks[1]')
-    cv2_imshow(np.array(masks)[0][2].reshape((512, 512, 1)), 'masks[0][0]')
+    cv2_imshow(np.array(masks)[0][0].reshape((512, 512, 1)), 'masks[0][0]')
+    cv2_imshow(np.array(masks)[0][1].reshape((512, 512, 1)), 'masks[0][1]')
+    cv2_imshow(np.array(masks)[0][2].reshape((512, 512, 1)), 'masks[0][2]')
