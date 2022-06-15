@@ -1,10 +1,12 @@
 import itertools
 import json
+import os
 import time
 from collections import defaultdict
 from typing import List
 import numpy as np
 import pycocotools.mask as mask_util
+from PIL import Image
 
 from utilz.cv2_imshow import cv2_imshow
 
@@ -14,7 +16,7 @@ def _isArrayLike(obj):
 
 
 class PotatoDataset:
-    def __init__(self, annotation_file=None):
+    def __init__(self, annotation_file=None, images_path=None):
         """
         Constructor of Microsoft COCO helper class for reading and visualizing annotations.
         :param annotation_file (str): location of annotation file
@@ -22,9 +24,11 @@ class PotatoDataset:
         :return:
         """
         # load dataset
+        self.sample = None
         self.dataset, self.anns, self.cats, self.imgs = dict(), dict(), dict(), dict()
         self.img_to_segments, self.cat_ids = \
             defaultdict(list), defaultdict(list)
+        self.images_path = images_path
         if annotation_file is not None:
             print('loading annotations into memory...')
             tic = time.time()
@@ -33,6 +37,9 @@ class PotatoDataset:
             print('Done (t={:0.2f}s)'.format(time.time() - tic))
             self.dataset = dataset
             self.create_index()
+
+    def __len__(self) -> int:
+        return len(self.sample['image'])
 
     def create_index(self):
         # create index
@@ -96,28 +103,46 @@ class PotatoDataset:
         rle = mask_util.merge(rles)
         return mask_util.decode(rle).astype(np.bool_)
 
-    def get_mask(self, masks=[], new_shape=(512, 512)):
+    def get_image(self, img_key, new_shape=(512, 512)):
+        file_name = self.imgs[img_key]['file_name']
+        image = Image.open(os.path.join(self.images_path, file_name))
+        image = np.asarray(self._scale(np.asarray(image), new_shape[0], new_shape[1]))
+        shape = image.shape
+        # print(f'shape={shape}')
+        image = np.transpose(image, (2, 0, 1))
+        return image
+
+    def get_mask(self, sample, new_shape=(512, 512)):
         for img_key in self.imgs.keys():
             # bitmasks = np.zeros((len(pd.cat_ids), self.imgs[img_key]['height'], self.imgs[img_key]['width']))
-            bitmasks = np.zeros((len(pd.cat_ids), new_shape[0], new_shape[1]))
-            print(f'empty bitmasks.shape={bitmasks.shape}')
+            image = self.get_image(img_key)
+            # print(f'image.shape={image.shape}')
+            # cv2_imshow(image[0])
+            # cv2_imshow(image[1])
+            # cv2_imshow(image[2])
+            bitmasks = np.zeros((len(pd.cat_ids), new_shape[0], new_shape[1]), dtype='bool')
+            # print(f'empty bitmasks.shape={bitmasks.shape}')
             for img_to_segment in self.img_to_segments[img_key]:
                 for cat in self.cat_ids:
                     if img_to_segment['category_id'] == cat:
                         # print(f'img_to_segment={img_to_segment}')
-                        print(f'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+                        # print(f'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+                        # print(f'cat={cat}')
                         bitmask = self._polygons_to_bitmask(
                             img_to_segment['segmentation'],
                             self.imgs[img_key]['height'], self.imgs[img_key]['width']
-                        ).astype('uint8')
-                        print(f'max old bitmask={np.max(bitmask)}')
+                        )
+                        # print(f'max old bitmask={np.max(bitmask)}')
                         bitmasks[cat - 1] += self._scale(bitmask, new_shape[0], new_shape[1])
-                        print(f'max new bitmask={np.max(np.resize(bitmask, new_shape=new_shape))}')
-                        print(f'bitmask.shape={bitmask.shape}')
-                        print(f'max bitmasks={np.max(bitmasks)}')
-            print(f'full bitmasks.shape={bitmasks.shape}')
-            masks.append(bitmasks)
-        return masks
+                        # print(f'max new bitmask={np.max(self._scale(bitmask, new_shape[0], new_shape[1]))}')
+                        # print(f'bitmask.shape={bitmask.shape}')
+                        # print(f'max bitmasks={np.max(bitmasks)}')
+            # print(f'full bitmasks.shape={bitmasks.shape}')
+            sample['image'].append(image)
+            sample['mask'].append(bitmasks.astype('uint8') * 255)
+        print('sample is loaded...')
+        self.sample = sample
+        return sample
 
     def _scale(self, im, n_rows, n_columns):
         n_rows0 = len(im)  # source number of rows
@@ -127,8 +152,17 @@ class PotatoDataset:
 
 
 if __name__ == '__main__':
-    pd = PotatoDataset('../datasets/potato_set16_coco.json')
+    pd = PotatoDataset(
+        annotation_file='../datasets/potato_set15_coco.json',
+        images_path='../datasets/set15'
+        )
+    sample = {'image': [], 'mask': []}
+    sample = pd.get_mask(sample)
 
+    pd2 = PotatoDataset('../datasets/potato_set6_coco.json',
+                        images_path='../datasets/set6')
+    sample = pd2.get_mask(sample)
+    print(f'len pd={len(pd)}')
     # print(f'pd.img_to_anns={pd.img_to_anns}')
     print(f'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     print(f'pd.imgs={pd.imgs}')
@@ -137,22 +171,16 @@ if __name__ == '__main__':
     print(f'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     # print(f'pd.cat_to_imgs={pd.cat_to_imgs}')
 
-    masks = pd.get_mask()
     print(f'pd.imgs.keys()={pd.imgs.keys()}')
-    # np.stack((masks, bitmasks.astype('uint8')), axis=2)
-    # cv2_imshow(mask.astype("uint8"))
-    # print(f'pb={mask.astype("uint8")}')
-    print(f'cat_ids={pd.cat_ids}')
-    print(f'masks.shape={np.array(masks).shape}')
-    # cv2_imshow(bitmask)
-    # print(f'bitmasks.shape={bitmasks.shape}')
 
-    # print(f'bitmasks={bitmasks}')
-    # cv2_imshow(bitmasks[0].reshape((height, width, 1)), 'bitmasks[0]')
-    # print(np.array(masks)[0])
+    print(f'cat_ids={pd.cat_ids}')
+    print(f'masks.shape={np.array(sample["mask"]).shape}')
+    print(f'image.shape={np.array(sample["image"]).shape}')
+
     # masks[masks == 1] = 255
-    print(np.array(masks)[0].shape)
+    # print(np.array(masks)[0].shape)
     # cv2_imshow(bitmasks[1].reshape((height, width, 1)), 'bitmasks[1]')
-    cv2_imshow(np.array(masks)[0][0].reshape((512, 512, 1)), 'masks[0][0]')
-    cv2_imshow(np.array(masks)[0][1].reshape((512, 512, 1)), 'masks[0][1]')
-    cv2_imshow(np.array(masks)[0][2].reshape((512, 512, 1)), 'masks[0][2]')
+    # cv2_imshow(np.array(sample["mask"])[0][0].reshape((512, 512, 1)), 'masks[0][0]')
+    # cv2_imshow(np.array(sample["mask"])[0][1].reshape((512, 512, 1)), 'masks[0][1]')
+    # cv2_imshow(np.array(sample["mask"])[0][2].reshape((512, 512, 1)), 'masks[0][2]')
+    # print(f'max masks={np.max(sample["mask"])}')
