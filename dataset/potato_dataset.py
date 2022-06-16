@@ -8,6 +8,7 @@ import numpy as np
 import pycocotools.mask as mask_util
 from PIL import Image
 
+from dataset.register_instances import instances, register_dataset_instances
 from utilz.cv2_imshow import cv2_imshow
 
 
@@ -16,7 +17,7 @@ def _isArrayLike(obj):
 
 
 class PotatoDataset:
-    def __init__(self, annotation_file=None, images_path=None):
+    def __init__(self, name_instances=[]):
         """
         Constructor of Microsoft COCO helper class for reading and visualizing annotations.
         :param annotation_file (str): location of annotation file
@@ -26,17 +27,20 @@ class PotatoDataset:
         # load dataset
         self.sample = None
         self.dataset, self.anns, self.cats, self.imgs = dict(), dict(), dict(), dict()
-        self.img_to_segments, self.cat_ids = \
-            defaultdict(list), defaultdict(list)
-        self.images_path = images_path
-        if annotation_file is not None:
-            print('loading annotations into memory...')
+        self.img_to_segments, self.cat_ids = defaultdict(list), defaultdict(list)
+        # self.images_path = images_path
+        # if annotation_file is not None:
+        print('loading annotations into memory...')
+        names = [name for name in instances.keys() if name in name_instances]
+        print(instances)
+        for name_inst in names:
             tic = time.time()
             dataset = json.load(open(annotation_file, 'r'))
             assert type(dataset) == dict, 'annotation file format {} not supported'.format(type(dataset))
             print('Done (t={:0.2f}s)'.format(time.time() - tic))
             self.dataset = dataset
-            self.create_index()
+        self.create_index()
+
 
     def __len__(self) -> int:
         return len(self.sample['image'])
@@ -152,15 +156,19 @@ class PotatoDataset:
 
 
 if __name__ == '__main__':
+    register_dataset_instances('name', '../datasets/potato_set15_coco.json', '../datasets/set15')
+    register_dataset_instances('name2', '../datasets/potato_set16_coco.json', '../datasets/set16')
     pd = PotatoDataset(
         annotation_file='../datasets/potato_set15_coco.json',
         images_path='../datasets/set15'
-        )
+    )
     sample = {'image': [], 'mask': []}
     sample = pd.get_mask(sample)
 
-    pd2 = PotatoDataset('../datasets/potato_set6_coco.json',
-                        images_path='../datasets/set6')
+    pd2 = PotatoDataset(
+        '../datasets/potato_set6_coco.json',
+        images_path='../datasets/set6'
+        )
     sample = pd2.get_mask(sample)
     print(f'len pd={len(pd)}')
     # print(f'pd.img_to_anns={pd.img_to_anns}')
