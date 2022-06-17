@@ -8,6 +8,7 @@ from typing import Callable, List, Optional
 import numpy as np
 import pycocotools.mask as mask_util
 from PIL import Image
+from torchvision import transforms
 from tqdm import tqdm
 
 from dataset.register_instances import instances, register_dataset_instances
@@ -19,7 +20,8 @@ def _isArrayLike(obj):
 
 
 class PotatoDataset:
-    def __init__(self, name_instances=[], new_shape=(512, 512), transforms: Optional[Callable] = None):
+    def __init__(self, name_instances=[], new_shape=(512, 512), transforms_image: Optional[Callable] = None,
+                 transforms_mask: Optional[Callable] = None):
         """
         Constructor of Microsoft COCO helper class for reading and visualizing annotations.
         :param annotation_file (str): location of annotation file
@@ -34,14 +36,15 @@ class PotatoDataset:
         self.images_path = None
         self.new_shape = new_shape
         self.name_instances = [name for name in instances.keys() if name in name_instances]
-        self.transforms = transforms
+        self.transforms_image = transforms_image
+        self.transforms_mask = transforms_mask
         # print(self.name_instances)
         self.get_sample()
 
     def __getitem__(self, index):
-        if self.transforms:
-            self.sub_sample["image"] = self.transforms(self.sample["image"][index])
-            self.sub_sample["mask"] = self.transforms(self.sample["mask"][index])
+        if self.transforms_image and self.transforms_mask:
+            self.sub_sample["image"] = self.transforms_image(self.sample["image"][index])
+            self.sub_sample["mask"] = self.transforms_mask(self.sample["mask"][index])
         else:
             self.sub_sample['image'] = self.sample['image'][index]
             self.sub_sample['mask'] = self.sample['mask'][index]
@@ -199,7 +202,20 @@ if __name__ == '__main__':
     register_dataset_instances('set6', '../datasets/potato_set6_coco.json', '../datasets/set6')
     register_dataset_instances('set15', '../datasets/potato_set15_coco.json', '../datasets/set15')
     register_dataset_instances('set16', '../datasets/potato_set16_coco.json', '../datasets/set16')
-    pd = PotatoDataset(['set16'])  # 'set6', 'set15',
+    data_transforms_image = transforms.Compose(
+        [transforms.ToTensor(),
+         transforms.Normalize(
+             mean=[0.485, 0.456, 0.406],
+             std=[0.229, 0.224, 0.225]
+         )
+         ]
+    )
+    data_transforms_mask = transforms.Compose(
+        [transforms.ToTensor()
+         ]
+    )
+    pd = PotatoDataset(['set16'], transforms_image=data_transforms_image, transforms_mask=data_transforms_mask)  #
+    # 'set6', 'set15',
     # sample = {'image': [], 'mask': []}
     # sample = pd.get_mask(sample)
 
@@ -216,8 +232,8 @@ if __name__ == '__main__':
     # print(f'pd.cats={pd.cats}')
     # print(f'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     # print(f'pd.cat_to_imgs={pd.cat_to_imgs}')
-    # for i in range(len(pd)):
-    #     print(pd[i])
+    for i in range(len(pd)):
+        print(pd[i])
 
     # print(f'pd.imgs.keys()={pd.imgs.keys()}')
     # print(f'cat_ids={pd.cat_ids}')

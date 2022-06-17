@@ -20,7 +20,7 @@ def get_dataloader(train_instances: List = [],
         dataloaders: Returns dataloaders dictionary containing the
         Train and Test dataloaders.
     """
-    data_transforms = transforms.Compose(
+    data_transforms_image = transforms.Compose(
         [transforms.ToTensor(),
          transforms.Normalize(
              mean=[0.485, 0.456, 0.406],
@@ -29,14 +29,21 @@ def get_dataloader(train_instances: List = [],
          ]
     )
 
+    data_transforms_mask = transforms.Compose(
+        [transforms.ToTensor()
+         ]
+    )
+
     image_datasets = {
         'Train': PotatoDataset(
             name_instances=train_instances,
-            transforms=data_transforms
+            transforms_image=data_transforms_image,
+            transforms_mask=data_transforms_mask
         ),
         'Test': PotatoDataset(
             name_instances=test_instances,
-            transforms=data_transforms
+            transforms_image=data_transforms_image,
+            transforms_mask=data_transforms_mask
         )
 
     }
@@ -46,7 +53,7 @@ def get_dataloader(train_instances: List = [],
             batch_size=batch_size,
             shuffle=True,
             num_workers=2,
-            drop_last=False
+            drop_last=True
         )
         for x in ['Train', 'Test']
     }
