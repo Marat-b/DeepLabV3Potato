@@ -4,11 +4,11 @@ import os
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import List, Optional
+from typing import Callable, List, Optional
 import numpy as np
 import pycocotools.mask as mask_util
 from PIL import Image
-
+from tqdm import tqdm
 
 from dataset.register_instances import instances, register_dataset_instances
 from utilz.cv2_imshow import cv2_imshow
@@ -19,7 +19,7 @@ def _isArrayLike(obj):
 
 
 class PotatoDataset:
-    def __init__(self, name_instances=[], new_shape=(512, 512)):
+    def __init__(self, name_instances=[], new_shape=(512, 512), transforms: Optional[Callable] = None):
         """
         Constructor of Microsoft COCO helper class for reading and visualizing annotations.
         :param annotation_file (str): location of annotation file
@@ -34,12 +34,17 @@ class PotatoDataset:
         self.images_path = None
         self.new_shape = new_shape
         self.name_instances = [name for name in instances.keys() if name in name_instances]
+        self.transforms = transforms
         # print(self.name_instances)
         self.get_sample()
 
     def __getitem__(self, index):
-        self.sub_sample['image'] = self.sample['image'][index]
-        self.sub_sample['mask'] = self.sample['mask'][index]
+        if self.transforms:
+            self.sub_sample["image"] = self.transforms(self.sample["image"][index])
+            self.sub_sample["mask"] = self.transforms(self.sample["mask"][index])
+        else:
+            self.sub_sample['image'] = self.sample['image'][index]
+            self.sub_sample['mask'] = self.sample['mask'][index]
         return self.sub_sample
 
     def __len__(self) -> int:
@@ -51,8 +56,7 @@ class PotatoDataset:
         :return: None
         :rtype:
         """
-        print('creating index...')
-        anns, cats, imgs = {}, {}, {}
+        imgs = {}
         img_to_segments, cat_ids = defaultdict(list), defaultdict(list)
         if 'images' in self.dataset:
             for img in self.dataset['images']:
@@ -68,7 +72,6 @@ class PotatoDataset:
                 )
         if 'categories' in self.dataset:
             cat_ids = [cat['id'] for cat in self.dataset['categories']]
-        print('index created!')
         self.imgs = imgs
         self.img_to_segments = img_to_segments
         self.cat_ids = cat_ids
@@ -103,7 +106,7 @@ class PotatoDataset:
             image = np.asarray(self._scale(np.asarray(image), self.new_shape))
             # shape = image.shape
             # print(f'shape={shape}')
-            image = np.transpose(image, (2, 0, 1))
+            # image = np.transpose(image, (2, 0, 1))
             return image
         else:
             print(f' Path {os.path.join(self.images_path, file_name)} does not exists')
@@ -127,7 +130,7 @@ class PotatoDataset:
             # cv2_imshow(image[0])
             # cv2_imshow(image[1])
             # cv2_imshow(image[2])
-            bitmasks = np.zeros((len(self.cat_ids), self.new_shape[0], self.new_shape[1]), dtype='bool')
+            bitmasks = np.zeros((len(self.cat_ids) + 1, self.new_shape[0], self.new_shape[1]), dtype='bool')
             # print(f'empty bitmasks.shape={bitmasks.shape}')
             for img_to_segment in self.img_to_segments[img_key]:
                 for cat in self.cat_ids:
@@ -140,14 +143,18 @@ class PotatoDataset:
                             self.imgs[img_key]['height'], self.imgs[img_key]['width']
                         )
                         # print(f'max old bitmask={np.max(bitmask)}')
-                        bitmasks[cat - 1] += self._scale(bitmask, self.new_shape)
+                        bitmasks[cat] += self._scale(bitmask, self.new_shape)
                         # print(f'max new bitmask={np.max(self._scale(bitmask, new_shape[0], new_shape[1]))}')
                         # print(f'bitmask.shape={bitmask.shape}')
                         # print(f'max bitmasks={np.max(bitmasks)}')
+            bitmasks = np.transpose(bitmasks, (1, 2, 0))
             # print(f'full bitmasks.shape={bitmasks.shape}')
             sample['image'].append(image)
-            sample['mask'].append(bitmasks.astype('uint8') * 255)
-        print('sample is loaded...')
+            sample['mask'].append(bitmasks.astype('uint8'))
+            # print(f"image={(image / 255).dtype}")
+            # print(f"bitmasks={bitmasks.astype('float').dtype}")
+
+        # print('sample is loaded...')
         self.sample = sample
         # return sample
 
@@ -157,20 +164,22 @@ class PotatoDataset:
         :return:
         :rtype:
         """
-        for name_inst in self.name_instances:
-            tic = time.time()
+        print('Start to get instances...')
+        for name_inst in tqdm(self.name_instances):
+            # tic = time.time()
             self.images_path = instances[name_inst][1]
             if Path(instances[name_inst][0]).exists():
                 dataset = json.load(open(instances[name_inst][0], 'r'))
                 assert type(dataset) == dict, 'annotation file format {} not supported'.format(type(dataset))
-                print('Done (t={:0.2f}s)'.format(time.time() - tic))
+                # print('Done (t={:0.2f}s)'.format(time.time() - tic))
                 self.dataset = dataset
                 self.create_index()
                 self.get_mask(self.sample)
             # else:
             #     raise OSError(f"{instances[name_inst][0]} does not exist.")
-        print(f'masks.shape={np.array(self.sample["mask"]).shape}')
-        print(f'image.shape={np.array(self.sample["image"]).shape}')
+        print('End to get instances...')
+        # print(f'masks.shape={np.array(self.sample["mask"]).shape}')
+        # print(f'image.shape={np.array(self.sample["image"]).shape}')
 
     def _scale(self, im, n_shape):
         """
@@ -207,8 +216,8 @@ if __name__ == '__main__':
     # print(f'pd.cats={pd.cats}')
     # print(f'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     # print(f'pd.cat_to_imgs={pd.cat_to_imgs}')
-    for i in range(len(pd)):
-        print(pd[i])
+    # for i in range(len(pd)):
+    #     print(pd[i])
 
     # print(f'pd.imgs.keys()={pd.imgs.keys()}')
     # print(f'cat_ids={pd.cat_ids}')
