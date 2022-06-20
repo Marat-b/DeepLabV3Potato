@@ -48,14 +48,21 @@ def get_dataloader(train_instances: List = [],
 
     }
     dataloaders = {
-        x: DataLoader(
-            image_datasets[x],
+        'Train': DataLoader(
+            image_datasets['Train'],
             batch_size=batch_size,
             shuffle=True,
             num_workers=2,
             drop_last=True
+        ),
+        'Test': DataLoader(
+            image_datasets['Test'],
+            batch_size=1,
+            shuffle=False,
+            num_workers=2,
+            drop_last=False
         )
-        for x in ['Train', 'Test']
+        # for x in ['Train', 'Test']
     }
     return dataloaders
 
@@ -69,7 +76,7 @@ if __name__ == '__main__':
     # for i_batch, sample_batched in enumerate(dataloader):
     #     print(i_batch, sample_batched )
     print(iter(dataloader['Test']))
-    for sample in iter(dataloader['Train']):
+    for sample in iter(dataloader['Test']):
         inputs = sample['image']
         masks = sample['mask']
         print(f'inputs={inputs}')

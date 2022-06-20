@@ -43,12 +43,13 @@ def train_model(model, criterion, dataloaders, optimizer, metrics, bpath,
                 inputs = sample['image'].to(device)
                 masks = sample['mask'].to(device)
                 # print(f'inputs={inputs}')
+                # print(f'masks={masks}')
                 # zero the parameter gradients
                 optimizer.zero_grad()
 
                 # track history if only in train
                 with torch.set_grad_enabled(phase == 'Train'):
-                    print(f'inputs.shape={inputs.shape}')
+                    # print(f'\ninputs.shape={inputs.shape}')
                     outputs = model(inputs)
                     loss = criterion(outputs['out'], masks)
                     y_pred = outputs['out'].data.cpu().numpy().ravel()
@@ -56,11 +57,12 @@ def train_model(model, criterion, dataloaders, optimizer, metrics, bpath,
                     for name, metric in metrics.items():
                         if name == 'f1_score':
                             # Use a classification threshold of 0.1
-                            print(f'y_true.shape={y_true.shape}, y_pred.shape={y_pred.shape}')
+                            # print(f'y_true.shape={y_true.shape}, y_pred.shape={y_pred.shape}')
                             batchsummary[f'{phase}_{name}'].append(
                                 metric(y_true > 0, y_pred > 0.1))
                         else:
-                            print(f'y_true={y_true}\ny_pred={y_pred}')
+                            # print(f'y_true={y_true}\ny_pred={y_pred}')
+                            # print(f'y_true max={np.max(y_true)}, y_true min={np.min(y_true)}')
                             batchsummary[f'{phase}_{name}'].append(
                                 metric(y_true.astype('uint8'), y_pred))
 

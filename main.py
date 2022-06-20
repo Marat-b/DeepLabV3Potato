@@ -56,7 +56,8 @@ def main(exp_directory, epochs, batch_size, out_name):
         exp_directory.mkdir()
 
     # Specify the loss function
-    criterion = torch.nn.MSELoss(reduction='mean')
+    # criterion = torch.nn.MSELoss(reduction='mean')
+    criterion = torch.nn.CrossEntropyLoss(reduction='mean')
     # Specify the optimizer with a lower learning rate
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
@@ -65,7 +66,7 @@ def main(exp_directory, epochs, batch_size, out_name):
 
     # Create the dataloader
     dataloaders = datahandler.get_dataloader(
-        train_instances=['set15'], test_instances=['set1'], batch_size=batch_size
+        train_instances=['set6', 'set37'], test_instances=['set15'], batch_size=batch_size
     )
     _ = train_model(
         model,
@@ -94,5 +95,5 @@ if __name__ == "__main__":
     register_dataset_instances('set6', './datasets/potato_set6_coco.json', './datasets/set6')
     register_dataset_instances('set15', './datasets/potato_set15_coco.json', './datasets/set15')
     register_dataset_instances('set16', './datasets/potato_set16_coco.json', './datasets/set16')
-    # register_dataset_instances('set37', './datasets/potato_set37_coco.json', './datasets/set37')
+    register_dataset_instances('set37', './datasets/potato_set37_coco.json', './datasets/set37')
     main()  # tuple(['set6']), tuple(['set15'])

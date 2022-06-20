@@ -133,6 +133,7 @@ class PotatoDataset:
             # cv2_imshow(image[0])
             # cv2_imshow(image[1])
             # cv2_imshow(image[2])
+            # + 1 for background class
             bitmasks = np.zeros((len(self.cat_ids) + 1, self.new_shape[0], self.new_shape[1]), dtype='bool')
             # print(f'empty bitmasks.shape={bitmasks.shape}')
             for img_to_segment in self.img_to_segments[img_key]:
@@ -153,7 +154,7 @@ class PotatoDataset:
             bitmasks = np.transpose(bitmasks, (1, 2, 0))
             # print(f'full bitmasks.shape={bitmasks.shape}')
             sample['image'].append(image)
-            sample['mask'].append(bitmasks.astype('uint8'))
+            sample['mask'].append(bitmasks.astype('float'))
             # print(f"image={(image / 255).dtype}")
             # print(f"bitmasks={bitmasks.astype('float').dtype}")
 
@@ -232,6 +233,7 @@ if __name__ == '__main__':
     # print(f'pd.cats={pd.cats}')
     # print(f'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     # print(f'pd.cat_to_imgs={pd.cat_to_imgs}')
+
     for i in range(len(pd)):
         print(pd[i])
 
