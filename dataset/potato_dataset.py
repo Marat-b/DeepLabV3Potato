@@ -33,7 +33,7 @@ class PotatoDataset:
         self.images_path = None
         self.new_shape = new_shape
         self.data_instances = data_instances
-        print(f'data_instances={data_instances}\nself.data_instances={self.data_instances}')
+        # print(f'data_instances={data_instances}\nself.data_instances={self.data_instances}')
         self.transforms_image = transforms_image
         self.transforms_mask = transforms_mask
         # print(self.data_instances)
@@ -171,7 +171,7 @@ class PotatoDataset:
             # tic = time.time()
             self.images_path = data_instance[1]
             if Path(data_instance[0]).exists():
-                print(f'Load dataset:{data_instance[0]}')
+                # print(f'Load dataset:{data_instance[0]}')
                 dataset = json.load(open(data_instance[0], 'r'))
                 assert type(dataset) == dict, 'annotation file format {} not supported'.format(type(dataset))
                 # print('Done (t={:0.2f}s)'.format(time.time() - tic))
