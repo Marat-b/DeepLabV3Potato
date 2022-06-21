@@ -44,15 +44,15 @@ from trainer import train_model
 # )
 # @click.argument('trains', type=click.Tuple)
 # @click.argument('tests', type=click.Tuple)
-def main(exp_directory='weights', epochs=1, batch_size=8, out_name='potato_model', classes=4, train_instances=None,
-         test_instances=None):
+def main(exp_directory='weights', epochs=1, batch_size=8, out_name='potato_model', classes=4, train_inst=None,
+         test_inst=None):
     # Create the deeplabv3 resnet101 model which is pretrained on a subset
     # of COCO train2017, on the 20 categories that are present in the Pascal VOC dataset.
-    if train_instances is None:
-        train_instances = []
-    if test_instances is None:
-        test_instances = []
-    print(f'train_instances={train_instances}\ntest_instances={test_instances}')
+    if train_inst is None:
+        train_inst = []
+    if test_inst is None:
+        test_inst = []
+    print(f'train_inst={train_inst}\ntest_inst={test_inst}')
     model = createDeepLabv3(outputchannels=classes)
     model.train()
     # data_directory = Path(data_directory)
@@ -72,7 +72,7 @@ def main(exp_directory='weights', epochs=1, batch_size=8, out_name='potato_model
 
     # Create the dataloader
     dataloaders = datahandler.get_dataloader(
-        train_instances=train_instances, test_instances=test_instances, batch_size=batch_size
+        train_instances=train_inst, test_instances=test_inst, batch_size=batch_size
     )
     _ = train_model(
         model,
@@ -102,4 +102,4 @@ if __name__ == "__main__":
     register_dataset_instances('set15', './datasets/potato_set15_coco.json', './datasets/set15')
     register_dataset_instances('set16', './datasets/potato_set16_coco.json', './datasets/set16')
     register_dataset_instances('set37', './datasets/potato_set37_coco.json', './datasets/set37')
-    main(train_instances=['set6', 'set37'], test_instances=['set15'])  # tuple(['set6']), tuple(['set15'])
+    main(train_inst=['set6', 'set37'], test_inst=['set15'])  # tuple(['set6']), tuple(['set15'])
