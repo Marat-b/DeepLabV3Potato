@@ -36,6 +36,7 @@ class PotatoDataset:
         self.images_path = None
         self.new_shape = new_shape
         self.name_instances = [name for name in instances.keys() if name in name_instances]
+        print(f'name_instances={name_instances}\nself.name_instances={self.name_instances}')
         self.transforms_image = transforms_image
         self.transforms_mask = transforms_mask
         # print(self.name_instances)
