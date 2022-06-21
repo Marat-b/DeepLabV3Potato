@@ -173,6 +173,7 @@ class PotatoDataset:
             # tic = time.time()
             self.images_path = instances[name_inst][1]
             if Path(instances[name_inst][0]).exists():
+                print(f'Load dataset:{instances[name_inst][0]}')
                 dataset = json.load(open(instances[name_inst][0], 'r'))
                 assert type(dataset) == dict, 'annotation file format {} not supported'.format(type(dataset))
                 # print('Done (t={:0.2f}s)'.format(time.time() - tic))
