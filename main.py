@@ -13,41 +13,46 @@ from model import createDeepLabv3
 from trainer import train_model
 
 
-@click.command()
+# @click.command()
 # @click.option(
 #     "--data_directory",
 #     required=True,
 #     help="Specify the data directory."
 # )
-@click.option(
-    "--exp_directory",
-    required=True,
-    help="Specify the experiment directory."
-)
-@click.option(
-    "--epochs",
-    default=25,
-    type=int,
-    help="Specify the number of epochs you want to run the experiment for."
-)
-@click.option(
-    "--batch-size",
-    default=4,
-    type=int,
-    help="Specify the batch size for the dataloader."
-)
-@click.option(
-    "--out_name",
-    default="weight",
-    type=str,
-    help="Name of output file"
-)
+# @click.option(
+#     "--exp_directory",
+#     required=True,
+#     help="Specify the experiment directory."
+# )
+# @click.option(
+#     "--epochs",
+#     default=25,
+#     type=int,
+#     help="Specify the number of epochs you want to run the experiment for."
+# )
+# @click.option(
+#     "--batch-size",
+#     default=4,
+#     type=int,
+#     help="Specify the batch size for the dataloader."
+# )
+# @click.option(
+#     "--out_name",
+#     default="weight",
+#     type=str,
+#     help="Name of output file"
+# )
 # @click.argument('trains', type=click.Tuple)
 # @click.argument('tests', type=click.Tuple)
-def main(exp_directory, epochs, batch_size, out_name):
+def main(exp_directory='weights', epochs=1, batch_size=8, out_name='potato_model', classes=4, train_instances=None,
+         test_instances=None):
     # Create the deeplabv3 resnet101 model which is pretrained on a subset
     # of COCO train2017, on the 20 categories that are present in the Pascal VOC dataset.
-    model = createDeepLabv3(outputchannels=4)
+    if train_instances is None:
+        train_instances = []
+    if test_instances is None:
+        test_instances = []
+    model = createDeepLabv3(outputchannels=classes)
     model.train()
     # data_directory = Path(data_directory)
     # Create the experiment directory if not present
@@ -59,14 +64,14 @@ def main(exp_directory, epochs, batch_size, out_name):
     # criterion = torch.nn.MSELoss(reduction='mean')
     criterion = torch.nn.CrossEntropyLoss(reduction='mean')
     # Specify the optimizer with a lower learning rate
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
     # Specify the evaluation metrics
     metrics = {'f1_score': f1_score, 'auroc': roc_auc_score}
 
     # Create the dataloader
     dataloaders = datahandler.get_dataloader(
-        train_instances=['set6', 'set37'], test_instances=['set15'], batch_size=batch_size
+        train_instances=train_instances, test_instances=test_instances, batch_size=batch_size
     )
     _ = train_model(
         model,
@@ -96,4 +101,4 @@ if __name__ == "__main__":
     register_dataset_instances('set15', './datasets/potato_set15_coco.json', './datasets/set15')
     register_dataset_instances('set16', './datasets/potato_set16_coco.json', './datasets/set16')
     register_dataset_instances('set37', './datasets/potato_set37_coco.json', './datasets/set37')
-    main()  # tuple(['set6']), tuple(['set15'])
+    main(train_instances=['set6', 'set37'], test_instances=['set15'])  # tuple(['set6']), tuple(['set15'])
