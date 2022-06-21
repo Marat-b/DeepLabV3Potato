@@ -8,42 +8,11 @@ from torch.utils import data
 from torchvision import transforms
 
 from dataset import datahandler
-from dataset.register_instances import register_dataset_instances
+from dataset.register_instances import RegisterDataset
 from model import createDeepLabv3
 from trainer import train_model
 
 
-# @click.command()
-# @click.option(
-#     "--data_directory",
-#     required=True,
-#     help="Specify the data directory."
-# )
-# @click.option(
-#     "--exp_directory",
-#     required=True,
-#     help="Specify the experiment directory."
-# )
-# @click.option(
-#     "--epochs",
-#     default=25,
-#     type=int,
-#     help="Specify the number of epochs you want to run the experiment for."
-# )
-# @click.option(
-#     "--batch-size",
-#     default=4,
-#     type=int,
-#     help="Specify the batch size for the dataloader."
-# )
-# @click.option(
-#     "--out_name",
-#     default="weight",
-#     type=str,
-#     help="Name of output file"
-# )
-# @click.argument('trains', type=click.Tuple)
-# @click.argument('tests', type=click.Tuple)
 def main(exp_directory='weights', epochs=1, batch_size=8, out_name='potato_model', classes=4, train_inst=None,
          test_inst=None):
     # Create the deeplabv3 resnet101 model which is pretrained on a subset
@@ -97,9 +66,11 @@ def main(exp_directory='weights', epochs=1, batch_size=8, out_name='potato_model
 
 
 if __name__ == "__main__":
-    register_dataset_instances('set1', './datasets/potato_set1.json', './datasets/set1')
-    register_dataset_instances('set6', './datasets/potato_set6_coco.json', './datasets/set6')
-    register_dataset_instances('set15', './datasets/potato_set15_coco.json', './datasets/set15')
-    register_dataset_instances('set16', './datasets/potato_set16_coco.json', './datasets/set16')
-    register_dataset_instances('set37', './datasets/potato_set37_coco.json', './datasets/set37')
-    main(train_inst=['set6', 'set37'], test_inst=['set15'])  # tuple(['set6']), tuple(['set15'])
+    rd = RegisterDataset()
+    rd.register_dataset_instances('set1', './datasets/potato_set1.json', './datasets/set1')
+    rd.register_dataset_instances('set6', './datasets/potato_set6_coco.json', './datasets/set6')
+    rd.register_dataset_instances('set15', './datasets/potato_set15_coco.json', './datasets/set15')
+    rd.register_dataset_instances('set16', './datasets/potato_set16_coco.json', './datasets/set16')
+    rd.register_dataset_instances('set37', './datasets/potato_set37_coco.json', './datasets/set37')
+    main(train_inst=rd.get_instances(['set6']), test_inst=rd.get_instances(['set15']))  # tuple(['set6']),
+    # tuple(['set15'])

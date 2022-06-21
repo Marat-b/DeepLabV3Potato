@@ -5,7 +5,6 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from dataset.potato_dataset import PotatoDataset
-from dataset.register_instances import register_dataset_instances
 
 
 def get_dataloader(train_instances: List = [],
@@ -36,12 +35,12 @@ def get_dataloader(train_instances: List = [],
 
     image_datasets = {
         'Train': PotatoDataset(
-            name_instances=train_instances,
+            data_instances=train_instances,
             transforms_image=data_transforms_image,
             transforms_mask=data_transforms_mask
         ),
         'Test': PotatoDataset(
-            name_instances=test_instances,
+            data_instances=test_instances,
             transforms_image=data_transforms_image,
             transforms_mask=data_transforms_mask
         )

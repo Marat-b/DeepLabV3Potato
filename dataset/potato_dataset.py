@@ -11,16 +11,13 @@ from PIL import Image
 from torchvision import transforms
 from tqdm import tqdm
 
-from dataset.register_instances import instances, register_dataset_instances
-from utilz.cv2_imshow import cv2_imshow
-
 
 def _isArrayLike(obj):
     return hasattr(obj, '__iter__') and hasattr(obj, '__len__')
 
 
 class PotatoDataset:
-    def __init__(self, name_instances=[], new_shape=(512, 512), transforms_image: Optional[Callable] = None,
+    def __init__(self, data_instances=[], new_shape=(512, 512), transforms_image: Optional[Callable] = None,
                  transforms_mask: Optional[Callable] = None):
         """
         Constructor of Microsoft COCO helper class for reading and visualizing annotations.
@@ -35,11 +32,11 @@ class PotatoDataset:
         self.img_to_segments, self.cat_ids = defaultdict(list), defaultdict(list)
         self.images_path = None
         self.new_shape = new_shape
-        self.name_instances = [name for name in instances.keys() if name in name_instances]
-        print(f'name_instances={name_instances}\nself.name_instances={self.name_instances}')
+        self.data_instances = data_instances
+        print(f'data_instances={data_instances}\nself.data_instances={self.data_instances}')
         self.transforms_image = transforms_image
         self.transforms_mask = transforms_mask
-        # print(self.name_instances)
+        # print(self.data_instances)
         self.get_sample()
 
     def __getitem__(self, index):
@@ -170,19 +167,19 @@ class PotatoDataset:
         :rtype:
         """
         print('Start to get instances...')
-        for name_inst in tqdm(self.name_instances):
+        for data_instance in tqdm(self.data_instances):
             # tic = time.time()
-            self.images_path = instances[name_inst][1]
-            if Path(instances[name_inst][0]).exists():
-                print(f'Load dataset:{instances[name_inst][0]}')
-                dataset = json.load(open(instances[name_inst][0], 'r'))
+            self.images_path = data_instance[1]
+            if Path(data_instance[0]).exists():
+                print(f'Load dataset:{data_instance[0]}')
+                dataset = json.load(open(data_instance[0], 'r'))
                 assert type(dataset) == dict, 'annotation file format {} not supported'.format(type(dataset))
                 # print('Done (t={:0.2f}s)'.format(time.time() - tic))
                 self.dataset = dataset
                 self.create_index()
                 self.get_mask(self.sample)
             else:
-                raise OSError(f"{instances[name_inst][0]} does not exist.")
+                raise OSError(f"{data_instance[0]} does not exist.")
         print('End to get instances...')
         # print(f'masks.shape={np.array(self.sample["mask"]).shape}')
         # print(f'image.shape={np.array(self.sample["image"]).shape}')
