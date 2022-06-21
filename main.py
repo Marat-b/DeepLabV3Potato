@@ -52,6 +52,7 @@ def main(exp_directory='weights', epochs=1, batch_size=8, out_name='potato_model
         train_instances = []
     if test_instances is None:
         test_instances = []
+    print(f'train_instances={train_instances}\ntest_instances={test_instances}')
     model = createDeepLabv3(outputchannels=classes)
     model.train()
     # data_directory = Path(data_directory)
