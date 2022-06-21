@@ -179,8 +179,8 @@ class PotatoDataset:
                 self.dataset = dataset
                 self.create_index()
                 self.get_mask(self.sample)
-            # else:
-            #     raise OSError(f"{instances[name_inst][0]} does not exist.")
+            else:
+                raise OSError(f"{instances[name_inst][0]} does not exist.")
         print('End to get instances...')
         # print(f'masks.shape={np.array(self.sample["mask"]).shape}')
         # print(f'image.shape={np.array(self.sample["image"]).shape}')
