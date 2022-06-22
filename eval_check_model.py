@@ -9,7 +9,7 @@ from tqdm import tqdm
 import cv2
 from dataset import datahandler
 from dataset.potato_dataset import PotatoDataset
-from dataset.register_instances import register_dataset_instances
+
 from utilz.cv2_imshow import cv2_imshow
 
 
@@ -83,7 +83,7 @@ def main():
 
 def main2():
     # model = torch.load('./weights/potato_20220617_10x.pth').eval()
-    model = torch.load('./weights/potato_20220621_b8_10x.pth').eval()
+    model = torch.load('./weights/potato_20220622_30x.pth', map_location=torch.device('cpu')).eval()
     image = Image.open('datasets/set37/00000000.jpg')
     print(image.getbands())
     print(f'image shape={np.asarray(image).transpose((2, 0, 1)).shape}')
