@@ -51,7 +51,7 @@ class PotatoSample:
             # tic = time.time()
             self.images_path = data_instance[1]
             if Path(data_instance[0]).exists():
-                print(f'Load dataset:{data_instance[0]}')
+                # print(f'Load dataset:{data_instance[0]}')
                 dataset = json.load(open(data_instance[0], 'r'))
                 assert type(dataset) == dict, 'annotation file format {} not supported'.format(type(dataset))
                 # print('Done (t={:0.2f}s)'.format(time.time() - tic))
@@ -60,7 +60,7 @@ class PotatoSample:
                 # self.get_mask(self.sample)
             else:
                 raise OSError(f"{data_instance[0]} does not exist.")
-        print('End to get instances...')
+        # print('End to get instances...')
 
     def create_index(self, path: str) -> None:
         """
