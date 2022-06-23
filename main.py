@@ -59,12 +59,12 @@ def main(exp_directory='weights', epochs=1, batch_size=4, out_name='potato_model
     to_pth = '{}.pth'.format(out_name)
     to_onnx = '{}.onnx'.format(out_name)
     torch.save(model, exp_directory / to_pth)
-    img = Image.open('./images/image_256.jpg')
-    image = transforms.ToTensor()(img).unsqueeze_(0)
-    torch.onnx.export(
-        model.eval().to('cpu'), (image,), exp_directory / to_onnx, opset_version=12,
-        do_constant_folding=True
-    )
+    # img = Image.open('./images/image_256.jpg')
+    # image = transforms.ToTensor()(img).unsqueeze_(0)
+    # torch.onnx.export(
+    #     model.eval().to('cpu'), (image,), exp_directory / to_onnx, opset_version=12,
+    #     do_constant_folding=True
+    # )
 
 
 if __name__ == "__main__":
