@@ -82,24 +82,34 @@ def main():
 
 
 def main2():
-    model = torch.load('./weights/potato_model.pth').eval()
+    # model = torch.load('./weights/potato_model.pth').eval()
     # model = torch.load('./weights/potato_20220617_10x.pth').eval()
-    # model = torch.load('./weights/potato_20220622_30x.pth', map_location=torch.device('cpu')).eval()
-    image = Image.open('datasets/set37/00000000.jpg')
+    model = torch.load('./weights/potato_20220623_1x.pth', map_location=torch.device('cpu')).eval()
+    # image = Image.open('datasets/set37/00000001.jpg')
+    image = Image.open('datasets/set6/Image_1.jpg')
     print(image.getbands())
     print(f'image shape={np.asarray(image).transpose((2, 0, 1)).shape}')
 
     y_pred_list = []
     y_true_list = []
     frame = None
+    transform = transforms.Compose(
+        [
+            transforms.PILToTensor(),
+            transforms.Resize(size=(256, 256))
+        ]
+    )
     # test_loader = dataloaders["Test"]
     # print(f'dataloaders={test_loader}')
     with torch.no_grad():
         # print(f'\nx_batch.shape={x_batch.shape}')
         # cv2_imshow(x_batch.numpy().squeeze().transpose(1, 2, 0))
         # res = model(torch.as_tensor(np.asarray(image).transpose(2, 0, 1).astype('float32')))
-        image_tensor = torch.as_tensor(np.asarray(image).transpose((2, 0, 1)).astype('float32')).unsqueeze(dim=0)
-        print(f'image.shape={image_tensor.shape}')
+        image_t = transform(image)
+        print(f'image_t.shape={image_t.shape}')
+        # image_tensor = torch.as_tensor(np.asarray(image).transpose((2, 0, 1)).astype('float32')).unsqueeze(dim=0)
+        image_tensor = transform(image).unsqueeze(dim=0).type(torch.float32)
+        print(f'image_tensor.shape={image_tensor.shape}')
         y_test_pred = model(image_tensor)
         y_test_pred = y_test_pred["out"]
         print(f'\ny_test_pred.shape={y_test_pred.shape}')
@@ -125,8 +135,8 @@ def main2():
 
     cv2_imshow(image, 'image')
 
-    colored_frame = show_color(y_pred_0.astype('uint8'), np.asarray(image))
-    cv2_imshow(colored_frame, 'colored_frame')
+    # colored_frame = show_color(y_pred_0.astype('uint8'), np.asarray(image))
+    # cv2_imshow(colored_frame, 'colored_frame')
 
 
 if __name__ == '__main__':
