@@ -5,11 +5,13 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from dataset.potato_dataset import PotatoDataset
+from dataset.potato_sample import PotatoSample
 
 
 def get_dataloader(train_instances: List = [],
                    test_instances: List = [],
-                   batch_size: int = 4):
+                   batch_size: int = 4,
+                   new_shape=(512, 512)):
     """Create train and test dataloader
 
     Args:
@@ -34,13 +36,15 @@ def get_dataloader(train_instances: List = [],
     )
 
     image_datasets = {
-        'Train': PotatoDataset(
+        'Train': PotatoSample(
             data_instances=train_instances,
+            new_shape=new_shape,
             transforms_image=data_transforms_image,
             transforms_mask=data_transforms_mask
         ),
-        'Test': PotatoDataset(
+        'Test': PotatoSample(
             data_instances=test_instances,
+            new_shape=new_shape,
             transforms_image=data_transforms_image,
             transforms_mask=data_transforms_mask
         )
@@ -56,7 +60,7 @@ def get_dataloader(train_instances: List = [],
         ),
         'Test': DataLoader(
             image_datasets['Test'],
-            batch_size=1,
+            batch_size=batch_size,
             shuffle=False,
             num_workers=2,
             drop_last=False
@@ -67,10 +71,12 @@ def get_dataloader(train_instances: List = [],
 
 
 if __name__ == '__main__':
-    register_dataset_instances('set6', '../datasets/potato_set6_coco.json', '../datasets/set6')
-    register_dataset_instances('set15', '../datasets/potato_set15_coco.json', '../datasets/set15')
-    register_dataset_instances('set16', '../datasets/potato_set16_coco.json', '../datasets/set16')
-    dataloader = get_dataloader(train_instances=['set16'], test_instances=['set16'], batch_size=1)
+    # register_dataset_instances('set6', '../datasets/potato_set6_coco.json', '../datasets/set6')
+    # register_dataset_instances('set15', '../datasets/potato_set15_coco.json', '../datasets/set15')
+    # register_dataset_instances('set16', '../datasets/potato_set16_coco.json', '../datasets/set16')
+    dataloader = get_dataloader(train_instances=[('../datasets/potato_set16_coco.json', '../datasets/set16')]
+                                , test_instances=[('../datasets/potato_set16_coco.json', '../datasets/set16')],
+                                batch_size=1)
     # print(f'dataloader={dir(dataloader)}')
     # for i_batch, sample_batched in enumerate(dataloader):
     #     print(i_batch, sample_batched )

@@ -82,8 +82,9 @@ def main():
 
 
 def main2():
+    model = torch.load('./weights/potato_model.pth').eval()
     # model = torch.load('./weights/potato_20220617_10x.pth').eval()
-    model = torch.load('./weights/potato_20220622_30x.pth', map_location=torch.device('cpu')).eval()
+    # model = torch.load('./weights/potato_20220622_30x.pth', map_location=torch.device('cpu')).eval()
     image = Image.open('datasets/set37/00000000.jpg')
     print(image.getbands())
     print(f'image shape={np.asarray(image).transpose((2, 0, 1)).shape}')

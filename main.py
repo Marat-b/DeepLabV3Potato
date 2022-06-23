@@ -13,7 +13,8 @@ from model import createDeepLabv3
 from trainer import train_model
 
 
-def main(exp_directory='weights', epochs=1, batch_size=8, out_name='potato_model', classes=4, train_inst=None,
+def main(exp_directory='weights', epochs=1, batch_size=4, out_name='potato_model', classes=4, new_shape=(512, 512),
+         train_inst=None,
          test_inst=None):
     # Create the deeplabv3 resnet101 model which is pretrained on a subset
     # of COCO train2017, on the 20 categories that are present in the Pascal VOC dataset.
@@ -34,14 +35,15 @@ def main(exp_directory='weights', epochs=1, batch_size=8, out_name='potato_model
     # criterion = torch.nn.MSELoss(reduction='mean')
     criterion = torch.nn.CrossEntropyLoss(reduction='mean')
     # Specify the optimizer with a lower learning rate
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
     # Specify the evaluation metrics
     metrics = {'f1_score': f1_score, 'auroc': roc_auc_score}
 
     # Create the dataloader
     dataloaders = datahandler.get_dataloader(
-        train_instances=train_inst, test_instances=test_inst, batch_size=batch_size
+        train_instances=train_inst,new_shape=new_shape, test_instances=test_inst, \
+                                                                                         batch_size=batch_size
     )
     _ = train_model(
         model,
@@ -72,5 +74,6 @@ if __name__ == "__main__":
     rd.register_dataset_instances('set15', './datasets/potato_set15_coco.json', './datasets/set15')
     rd.register_dataset_instances('set16', './datasets/potato_set16_coco.json', './datasets/set16')
     rd.register_dataset_instances('set37', './datasets/potato_set37_coco.json', './datasets/set37')
-    main(train_inst=rd.get_instances(['set6']), test_inst=rd.get_instances(['set15']))  # tuple(['set6']),
+    main(epochs=6, train_inst=rd.get_instances(['set37']), test_inst=rd.get_instances(['set15']),  new_shape=(256, 256))
+    # 'set6']),
     # tuple(['set15'])

@@ -12,17 +12,38 @@ from pathlib import Path
 
 
 class PotatoSample:
-    def __init__(self, data_instances=None, new_shape=(512, 512)):
-        if data_instances is None:
-            data_instances = []
+    def __init__(self, data_instances=[], new_shape=(512, 512), transforms_image: Optional[Callable] = None,
+                 transforms_mask: Optional[Callable] = None):
+        # if data_instances is None:
+        #     data_instances = []
+        # print(f'init data_instances={data_instances}, len={len(data_instances)}')
+        self.cat_ids = 0
         self.count_images = 0
         self.data_instances = data_instances
         self.dataset = dict()
         self.img_segments, self.cat_ids = defaultdict(list), defaultdict(list)
         self.new_shape = new_shape
         self.sample = {'image': [], 'mask': []}
+        self.sub_sample = self.sample.copy()
+        self.transforms_image = transforms_image
+        self.transforms_mask = transforms_mask
+        self.create_dataset()
+
+    def __getitem__(self, index):
+        sub_sample = {}
+        smpl = self.get_sample(index)
+        # print(f'self.get_sample(index)["image"].shape={smpl["image"].shape}')
+        # print(f'self.get_sample(index)["mask"].shape={smpl["mask"].shape}')
+        # smpl['image'].shape = (h, w ,c) type - ndarray
+        sub_sample["image"] = self.transforms_image(smpl["image"])
+        sub_sample["mask"] = self.transforms_mask(smpl["mask"])
+        # print(f'self.sub_sample(index)["image"]={sub_sample["image"].shape}')
+        # print(f'self.sub_sample(mask)["image"]={sub_sample["mask"].shape}')
+        # sub_sample['image'].shape = (c, h, w)
+        return sub_sample
 
     def __len__(self):
+        # print(f'len(self.img_segments)={len(self.img_segments)}')
         return len(self.img_segments)
 
     def create_dataset(self):
@@ -68,7 +89,7 @@ class PotatoSample:
                 imgs[img['id']] = img
 
         for img in imgs.keys():
-            print(f'--> img={img}')
+            # print(f'--> img={img}')
             self.img_segments[self.count_images].append(
                 {
                     'path': path,
@@ -81,19 +102,19 @@ class PotatoSample:
             self.count_images += 1
         if 'categories' in self.dataset:
             cat_ids = [cat['id'] for cat in self.dataset['categories']]
-        print(f'imgs={imgs}')
+        # print(f'imgs={imgs}')
         # print(f'img_segments={self.img_segments}')
-        print(f'cat_ids={cat_ids}')
+        # print(f'cat_ids={cat_ids}')
         # self.imgs = imgs
         # self.img_to_segments = img_to_segments
-        # self.cat_ids = cat_ids
+        self.cat_ids = cat_ids
 
     def get_image(self, images_path, file_name):
         if Path(os.path.join(images_path, file_name)).exists():
             image = Image.open(os.path.join(images_path, file_name))
             image = np.asarray(self._scale(np.asarray(image), self.new_shape))
             # shape = image.shape
-            # print(f'shape={shape}')
+            # print(f'get_image image.shape={shape}')
             # image = np.transpose(image, (2, 0, 1))
             return image
         else:
@@ -101,8 +122,9 @@ class PotatoSample:
             return None
 
     def get_mask(self, img_segment):
+        sample = {}
         img_segment = img_segment[0]
-        print(f'img_segment={img_segment}')
+        # print(f'img_segment={img_segment}')
         image = self.get_image(img_segment['path'], img_segment['file_name'])
         if image is not None:
             bitmasks = np.zeros((len(self.cat_ids) + 1, self.new_shape[0], self.new_shape[1]), dtype='bool')
@@ -115,7 +137,7 @@ class PotatoSample:
                         # print(f'cat={cat}')
                         bitmask = self._polygons_to_bitmask(
                             img_to_segment['segmentation'],
-                            img_to_segment['height'], img_to_segment['width']
+                            img_segment['height'], img_segment['width']
                         )
                         # print(f'max old bitmask={np.max(bitmask)}')
                         bitmasks[cat] += self._scale(bitmask, self.new_shape)
@@ -124,20 +146,23 @@ class PotatoSample:
                         # print(f'max bitmasks={np.max(bitmasks)}')
             bitmasks = np.transpose(bitmasks, (1, 2, 0))
             # print(f'full bitmasks.shape={bitmasks.shape}')
-            self.sample['image'].append(image)
-            self.sample['mask'].append(bitmasks.astype('float'))
-            print(f'self.sample={self.sample}')
+            sample['image'] = image
+            sample['mask'] = bitmasks.astype('float')
+            # print(f'self.sample={self.sample}')
             # print(f"image={(image / 255).dtype}")
             # print(f"bitmasks={bitmasks.astype('float').dtype}")
+            # print(f"image.shape={np.asarray(sample['image']).shape}")
+            # print(f"mask.shape={np.asarray(sample['mask']).shape}")
 
             # print('sample is loaded...')
         # self.sample = sample
-        # return sample
+        return sample
 
     def get_sample(self, index):
         img_segment = self.img_segments[index]
         # print(f'img_segment={img_segment}')
-        self.get_mask(img_segment)
+        sample = self.get_mask(img_segment)
+        return sample
 
     def _polygons_to_bitmask(self, polygons: List[np.ndarray], height: int, width: int) -> np.ndarray:
         """
@@ -170,10 +195,28 @@ class PotatoSample:
 
 
 if __name__ == "__main__":
-    ps = PotatoSample(
-        [['../datasets/potato_set15_coco.json', '../datasets/set15'],
-         ['../datasets/potato_set16_coco.json', '../datasets/set16']]
+    data_transforms_image = transforms.Compose(
+        [transforms.ToTensor(),
+         transforms.Normalize(
+             mean=[0.485, 0.456, 0.406],
+             std=[0.229, 0.224, 0.225]
+         )
+         ]
+    )
+
+    data_transforms_mask = transforms.Compose(
+        [transforms.ToTensor()
+         ]
+    )
+    ps = PotatoSample([
+        # [['../datasets/potato_set15_coco.json', '../datasets/set15'],
+        ('../datasets/potato_set16_coco.json', '../datasets/set16')],
+        transforms_image=data_transforms_image,
+        transforms_mask=data_transforms_mask
         )
-    ps.create_dataset()
-    print(len(ps))
-    ps.get_sample(3)
+    # ps.create_dataset()
+    print(f'len(ps)={len(ps)}')
+    # ps.get_sample(0)
+    for i in range(len(ps)):
+        print(f'i={i}')
+        s = ps[i]
