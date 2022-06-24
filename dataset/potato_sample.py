@@ -10,6 +10,8 @@ from torchvision import transforms
 from tqdm import tqdm
 from pathlib import Path
 
+from utilz.cv2_imshow import cv2_imshow
+
 
 class PotatoSample:
     def __init__(self, data_instances=[], new_shape=(512, 512), transforms_image: Optional[Callable] = None,
@@ -128,6 +130,7 @@ class PotatoSample:
         image = self.get_image(img_segment['path'], img_segment['file_name'])
         if image is not None:
             bitmasks = np.zeros((len(self.cat_ids) + 1, self.new_shape[0], self.new_shape[1]), dtype='bool')
+            # bitmasks = np.zeros((1, self.new_shape[0], self.new_shape[1]), dtype='int32')
             # print(f'empty bitmasks.shape={bitmasks.shape}')
             for img_to_segment in img_segment['annotations']:
                 for cat in self.cat_ids:
@@ -140,16 +143,22 @@ class PotatoSample:
                             img_segment['height'], img_segment['width']
                         )
                         # print(f'max old bitmask={np.max(bitmask)}')
+                        # bitmask = bitmask * cat
                         bitmasks[cat] += self._scale(bitmask, self.new_shape)
+                        # bitmasks[0] += self._scale(bitmask, self.new_shape)
                         # print(f'max new bitmask={np.max(self._scale(bitmask, new_shape[0], new_shape[1]))}')
                         # print(f'bitmask.shape={bitmask.shape}')
                         # print(f'max bitmasks={np.max(bitmasks)}')
+                    # cv2_imshow(np.transpose(bitmasks, (1, 2, 0)).astype('uint8'), 'bitmasks cat={}'.format(cat))
+            # for j in range(1, 4):
+            #     cv2_imshow(bitmasks[j], 'bitmasks{}'.format(j))
             bitmasks = np.transpose(bitmasks, (1, 2, 0))
+
             # print(f'full bitmasks.shape={bitmasks.shape}')
             sample['image'] = image
             sample['mask'] = bitmasks.astype('float')
             # print(f'self.sample={self.sample}')
-            # print(f"image={(image / 255).dtype}")
+            # print(f"image={image.dtype}")
             # print(f"bitmasks={bitmasks.astype('float').dtype}")
             # print(f"image.shape={np.asarray(sample['image']).shape}")
             # print(f"mask.shape={np.asarray(sample['mask']).shape}")

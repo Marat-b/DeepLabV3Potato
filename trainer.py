@@ -61,10 +61,12 @@ def train_model(model, criterion, dataloaders, optimizer, metrics, bpath,
                             batchsummary[f'{phase}_{name}'].append(
                                 metric(y_true > 0, y_pred > 0.1))
                         else:
-                            # print(f'y_true={y_true}\ny_pred={y_pred}')
+                            # print(f'\ny_true={y_true}, len(y_true)={len(y_true)}\ny_pred={y_pred}, len(y_pred)={len(y_pred)}')
                             # print(f'y_true max={np.max(y_true)}, y_true min={np.min(y_true)}')
                             batchsummary[f'{phase}_{name}'].append(
-                                metric(y_true.astype('uint8'), y_pred))
+                                # metric(y_true.astype('uint8'), y_pred, multi_class='ovo', average=None)
+                                metric(y_true.astype('uint8'), y_pred)
+                            )
 
                     # backward + optimize only if in training phase
                     if phase == 'Train':

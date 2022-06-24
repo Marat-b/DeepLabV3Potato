@@ -82,7 +82,7 @@ def main():
 
 
 def main2():
-    # model = torch.load('./weights/potato_model.pth').eval()
+    model = torch.load('./weights/potato_model.pth').eval()
     # model = torch.load('./weights/potato_20220617_10x.pth').eval()
     model = torch.load('./weights/potato_20220623_1x.pth', map_location=torch.device('cpu')).eval()
     # image = Image.open('datasets/set37/00000001.jpg')
@@ -111,10 +111,10 @@ def main2():
         image_tensor = transform(image).unsqueeze(dim=0).type(torch.float32)
         print(f'image_tensor.shape={image_tensor.shape}')
         y_test_pred = model(image_tensor)
-        y_test_pred = y_test_pred["out"]
+        y_test_pred = y_test_pred["out"].data
         print(f'\ny_test_pred.shape={y_test_pred.shape}')
         for i in range(4):
-            cv2_imshow((y_test_pred.numpy().squeeze())[i], 'y_test_pred[{}]'.format(i))
+            cv2_imshow((y_test_pred.numpy().squeeze())[i], 'y_test_pred{}'.format(i))
             print(f'max y_test_pred[{i}]={torch.max(y_test_pred[0][i])}')
         _, y_pred_tag = torch.max(y_test_pred, dim=1)
         print(f'y_pred_tag.shape={y_pred_tag.shape}')
@@ -124,10 +124,12 @@ def main2():
     print(f'y_pred_list.shape={np.asarray(y_pred_list).shape}')
     # print(f'y_pred_list={np.asarray(y_pred_list)}')
     # print(f'y_pred_list unique={np.unique(np.asarray(y_pred_list))}')
-    y_pred_0 = (np.asarray(y_pred_list[0])).transpose((1, 2, 0))  # .astype('uint8')
-    cv2_imshow(y_pred_0, 'y_pred_0')
-    print(f'y_pred_0 unique={np.unique(np.asarray(y_pred_0))}')
-    print(f'y_pred_0 mean={np.mean(np.asarray(y_pred_0))}')
+    for i, y_pred in enumerate(y_pred_list):
+        y_pred = (np.asarray(y_pred)).transpose((1, 2, 0))  # .astype('uint8')
+        cv2_imshow(y_pred, 'y_pred{}'.format(i))
+
+        print(f'y_pred unique={np.unique(np.asarray(y_pred))}')
+        print(f'y_pred mean={np.mean(np.asarray(y_pred))}')
 
     # y_pred_list = [i[0][0][0] for i in y_pred_list]
     # y_true_list = [i[0] for i in y_true_list]
