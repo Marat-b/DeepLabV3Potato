@@ -84,9 +84,9 @@ def main():
 def main2():
     model = torch.load('./weights/potato_model.pth').eval()
     # model = torch.load('./weights/potato_20220617_10x.pth').eval()
-    model = torch.load('./weights/potato_20220623_1x.pth', map_location=torch.device('cpu')).eval()
-    # image = Image.open('datasets/set37/00000001.jpg')
-    image = Image.open('datasets/set6/Image_1.jpg')
+    model = torch.load('./weights/potato_20220624_1x_norm.pth', map_location=torch.device('cpu')).eval()
+    image = Image.open('datasets/set37/00000001.jpg')
+    # image = Image.open('datasets/set6/Image_1.jpg')
     print(image.getbands())
     print(f'image shape={np.asarray(image).transpose((2, 0, 1)).shape}')
 
@@ -108,7 +108,7 @@ def main2():
         image_t = transform(image)
         print(f'image_t.shape={image_t.shape}')
         # image_tensor = torch.as_tensor(np.asarray(image).transpose((2, 0, 1)).astype('float32')).unsqueeze(dim=0)
-        image_tensor = transform(image).unsqueeze(dim=0).type(torch.float32)
+        image_tensor = transform(image).detach().unsqueeze(dim=0).type(torch.float32)
         print(f'image_tensor.shape={image_tensor.shape}')
         y_test_pred = model(image_tensor)
         y_test_pred = y_test_pred["out"].data
