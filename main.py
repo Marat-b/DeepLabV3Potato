@@ -23,7 +23,8 @@ def main(exp_directory='weights', epochs=1, batch_size=4, out_name='potato_model
     if test_inst is None:
         test_inst = []
     # print(f'train_inst={train_inst}\ntest_inst={test_inst}')
-    model = createDeepLabv3(outputchannels=4)
+    print(f'classes={classes}')
+    model = createDeepLabv3(outputchannels=classes)
     model.train()
     # data_directory = Path(data_directory)
     # Create the experiment directory if not present
@@ -32,8 +33,8 @@ def main(exp_directory='weights', epochs=1, batch_size=4, out_name='potato_model
         exp_directory.mkdir()
 
     # Specify the loss function
-    # criterion = torch.nn.MSELoss(reduction='mean')
-    criterion = torch.nn.CrossEntropyLoss(reduction='mean')
+    criterion = torch.nn.MSELoss(reduction='mean')
+    # criterion = torch.nn.CrossEntropyLoss(reduction='mean')
     # Specify the optimizer with a lower learning rate
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
@@ -77,10 +78,11 @@ if __name__ == "__main__":
     rd.register_dataset_instances('set37', './datasets/potato_set37_coco.json', './datasets/set37')
     main(
         epochs=1,
-        train_inst=rd.get_instances(['set37']),
+        train_inst=rd.get_instances(['set15']),
         test_inst=rd.get_instances(['set15']),
         new_shape=(256, 256),
-        out_name='potato_model_1'
+        out_name='potato_model_1',
+        classes=1
         )
     # main(epochs=1, train_inst=rd.get_instances(['set16']), test_inst=rd.get_instances(['set16']), new_shape=(256,
     # 256))

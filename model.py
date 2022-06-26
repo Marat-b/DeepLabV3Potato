@@ -16,7 +16,7 @@ def createDeepLabv3(outputchannels=1):
     model = models.segmentation.deeplabv3_resnet101(
         pretrained=False,
         progress=True,
-        num_classes=4
+        num_classes=outputchannels
         )
     model.classifier = DeepLabHead(2048, outputchannels)
     # Set the model in training mode

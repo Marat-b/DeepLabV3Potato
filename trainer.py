@@ -70,6 +70,7 @@ def train_model(model, criterion, dataloaders, optimizer, metrics, bpath,
 
                     # backward + optimize only if in training phase
                     if phase == 'Train':
+                        # print(f'loss.dtype={loss.dtype}')
                         loss.backward()
                         optimizer.step()
             batchsummary['epoch'] = epoch
