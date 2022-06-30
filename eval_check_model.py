@@ -82,9 +82,9 @@ def main():
 
 
 def main2():
-    model = torch.load('./weights/potato_model.pth').eval()
+    model = torch.load('./weights/best_model_20220630_fpn_resnext_20x.pth').eval()
     # model = torch.load('./weights/potato_20220617_10x.pth').eval()
-    model = torch.load('./weights/potato_20220624_1x_norm.pth', map_location=torch.device('cpu')).eval()
+    # model = torch.load('./weights/potato_20220626_45x_norm.pth', map_location=torch.device('cpu')).eval()
     image = Image.open('datasets/set37/00000001.jpg')
     # image = Image.open('datasets/set6/Image_1.jpg')
     print(image.getbands())
@@ -113,8 +113,10 @@ def main2():
         y_test_pred = model(image_tensor)
         y_test_pred = y_test_pred["out"].data
         print(f'\ny_test_pred.shape={y_test_pred.shape}')
-        for i in range(4):
-            cv2_imshow((y_test_pred.numpy().squeeze())[i], 'y_test_pred{}'.format(i))
+        for i in range(1):
+            image_show = (y_test_pred.squeeze().numpy())
+            print(f'image_show.shape={image_show.shape}')
+            cv2_imshow(image_show, 'y_test_pred{}'.format(i))
             print(f'max y_test_pred[{i}]={torch.max(y_test_pred[0][i])}')
         _, y_pred_tag = torch.max(y_test_pred, dim=1)
         print(f'y_pred_tag.shape={y_pred_tag.shape}')

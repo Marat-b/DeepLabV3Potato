@@ -33,11 +33,11 @@ def get_dataloader(train_instances: List = [],
     data_transforms_image = transforms.Compose(
         [transforms.ToTensor(),
          # transforms.Lambda(lambda t: t / 255)
-         CustomNormalize(255)
-         # transforms.Normalize(
-         #     mean=[0.485, 0.456, 0.406],
-         #     std=[0.229, 0.224, 0.225]
-         # )
+         # CustomNormalize(255)
+         transforms.Normalize(
+             mean=[0.485, 0.456, 0.406],
+             std=[0.229, 0.224, 0.225]
+         )
          ]
     )
 
@@ -71,7 +71,7 @@ def get_dataloader(train_instances: List = [],
         ),
         'Test': DataLoader(
             image_datasets['Test'],
-            batch_size=batch_size,
+            batch_size=1,
             shuffle=False,
             num_workers=2,
             drop_last=False

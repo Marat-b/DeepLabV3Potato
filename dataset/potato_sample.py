@@ -109,7 +109,8 @@ class PotatoSample:
         # print(f'cat_ids={cat_ids}')
         # self.imgs = imgs
         # self.img_to_segments = img_to_segments
-        self.cat_ids = cat_ids
+        # self.cat_ids = cat_ids
+        self.cat_ids = [1]
 
     def get_image(self, images_path, file_name):
         if Path(os.path.join(images_path, file_name)).exists():
@@ -173,12 +174,12 @@ class PotatoSample:
         # print(f'img_segment={img_segment}')
         image = self.get_image(img_segment['path'], img_segment['file_name'])
         if image is not None:
-            # bitmasks = np.zeros((len(self.cat_ids), self.new_shape[0], self.new_shape[1]), dtype='bool')
-            bitmasks = np.zeros((1, self.new_shape[0], self.new_shape[1]), dtype='bool')
+            bitmasks = np.zeros((len(self.cat_ids), self.new_shape[0], self.new_shape[1]), dtype='bool')
+            # bitmasks = np.zeros((1, self.new_shape[0], self.new_shape[1]), dtype='bool')
             # print(f'empty bitmasks.shape={bitmasks.shape}')
             for img_to_segment in img_segment['annotations']:
                 for cat in self.cat_ids:
-                    if img_to_segment['category_id'] == 1:
+                    if img_to_segment['category_id'] == cat:
                         # print(f'img_to_segment={img_to_segment}')
                         # print(f'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
                         # print(f'cat={cat}')
@@ -187,8 +188,8 @@ class PotatoSample:
                             img_segment['height'], img_segment['width']
                         )
                         # print(f'max old bitmask={np.max(bitmask)}')
-                        # bitmask = bitmask * cat
-                        bitmasks[0] += self._scale(bitmask, self.new_shape)
+                        # bitmask = bitmask * 255
+                        bitmasks[cat - 1] += self._scale(bitmask, self.new_shape)
                         # bitmasks[0] += self._scale(bitmask, self.new_shape)
                         # print(f'max new bitmask={np.max(self._scale(bitmask, new_shape[0], new_shape[1]))}')
                         # print(f'bitmask.shape={bitmask.shape}')

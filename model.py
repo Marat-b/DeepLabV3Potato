@@ -18,7 +18,7 @@ def createDeepLabv3(outputchannels=1):
         progress=True,
         num_classes=outputchannels
         )
-    model.classifier = DeepLabHead(2048, outputchannels)
+    model.classifier = DeepLabHead(2048, outputchannels - 1)
     # Set the model in training mode
     model.train()
     return model

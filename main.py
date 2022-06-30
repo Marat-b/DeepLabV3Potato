@@ -78,11 +78,11 @@ if __name__ == "__main__":
     rd.register_dataset_instances('set37', './datasets/potato_set37_coco.json', './datasets/set37')
     main(
         epochs=1,
-        train_inst=rd.get_instances(['set15']),
-        test_inst=rd.get_instances(['set15']),
+        train_inst=rd.get_instances(['set37']),
+        test_inst=rd.get_instances(['set37']),
         new_shape=(256, 256),
-        out_name='potato_model_1',
-        classes=1
+        out_name='potato_model',
+        classes=2
         )
     # main(epochs=1, train_inst=rd.get_instances(['set16']), test_inst=rd.get_instances(['set16']), new_shape=(256,
     # 256))
